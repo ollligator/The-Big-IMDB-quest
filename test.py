@@ -22,6 +22,18 @@ class TestIMDBDataManager(unittest.TestCase):
     def test_scraper_url(self):        
         url = 'https://www.google.com/'
         self.assertRaises(ValueError, self.manager.Scraper, url)
+    
+    def test_oscar_zero(self):       
+        self.manager.df_movies.loc[0, 'Oscars'] = 0
+        self.manager.OscarCalculator()
+        self.assertEqual(self.manager.df_movies.loc[0, ['Rating_Oscar']], self.manager.df_movies.loc[0, ['Rating']])
+        
+    def test_oscar_rating_ranges(self):
+        for i in range(self.num_movies):
+            self.assertGreaterEqual(self.manager.df_movies.loc[i, 'Rating_Oscar_Correction'],0)
+            self.assertLessEqual(self.manager.df_movies.loc[i, 'Rating_Oscar_Correction'],1.5)
+            
+    
         
     
         
