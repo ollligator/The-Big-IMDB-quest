@@ -23,49 +23,69 @@ def get_content(url, page_type):
 
 
 class Movie:
+    movie_id = []
+    title = []
+    rating = 0
+    votes = 0
+    oscars = 0
+    
     def __init__(self, movies, ind):
         
-        self.movie_id = []
-        self.title = []
-        self.rating = 0
-        self.votes = 0
-        self.oscars = 0
+
         
-        self.set_id(movies, ind)
+        
         self.set_title(movies, ind)
         self.set_rating(movies, ind)
         self.set_votes(movies, ind)
-        self.set_oscars()
+        self.set_oscars(movies, ind)
         
 
     def set_title(self, movies, ind):
         len_year = 7
         title_full = (' '.join(movies.select('.titleColumn')[ind].get_text().strip().split()).replace('.', ''))
         self.title = title_full[len(str(ind))+1:-len_year]
+        
+        if(len(self.title) == 0):
+            print(f'Something went wrong with a title of the movie number {ind}')
+        
     
     def set_rating(self, movies, ind):
         self.rating = float(movies.select('.ratingColumn.imdbRating')[ind].get_text().strip())
+        
+        if(self.rating > 10):
+            print(f'Something went wrong with a rating value of the movie number {ind}')
     
     def set_votes(self, movies, ind):
         self.votes = int(movies.select('.posterColumn span[name=nv]')[ind].get('data-value'))
+        
+        if(self.votes == 0):
+            print(f'Something went wrong with a number of votes for the movie number {ind}')
     
     def set_id(self, movies, ind):        
         self.movie_id = movies.find_all(class_='seen-widget')[ind].get('data-titleid')
+        
+        if(len(self.movie_id) == 0):
+            print(f'Something went wrong with a link of the movie number {ind}')
     
-    def set_oscars(self):
+    def set_oscars(self, movies, ind):
+        self.set_id(movies, ind)
+        
         award_url = 'https://www.imdb.com/title/' + self.movie_id +'/awards/?ref_=tt_awd/'
         award_content = get_content(award_url, 'lxml')
         for award in award_content.select('.awards'):
             aw = award.find(class_='title_award_outcome').get_text()
             if ("Winner" in aw) and ("Oscar" in aw):
-                self.oscars = int(award.find(class_='title_award_outcome').get('rowspan'))        
+                self.oscars = int(award.find(class_='title_award_outcome').get('rowspan')) 
+        
+        if(self.oscars > 12):
+            print(f'Something went wrong with a number of oscars for the movie number {ind}')        
+        
         
         
 
 class IMDBDataManager:
     def __init__(self, num_movies):
         self.num_movies = num_movies
-        self.movie_list = []
         self.df_movies = pd.DataFrame()
         
     def Scraper(self, url):
@@ -78,17 +98,16 @@ class IMDBDataManager:
                         mov.rating,
                         mov.votes,
                         mov.oscars]
-                self.movie_list.append(mov)
                 self.df_movies = self.df_movies.append(pd.Series(data, index=cols),ignore_index=True)
-        
-        self.df_movies.to_csv('IMDBtop20_initial.csv')
-            
+        if (self.df_movies.shape[0]!= self.num_movies):
+            raise ValueError('The movies were not scraped correctly from the page, please check the link. A .csv file cannot be saved')
+    
+    def StoreTopMovies(self):    
+        self.df_movies.to_csv('IMDBtop'+str(self.df_movies.shape[0])+'_initial.csv')
         
     def ReviewPenalizer(self):
         penalty_step = 100000
         deduction = 0.1
-        
-        max_votes = max([movie.votes for movie in self.movie_list])
         max_votes = self.df_movies['Votes'].max()    
              
         self.df_movies['Rating_Review_Correction'] = round((max_votes - self.df_movies['Votes']) // penalty_step * deduction,3)
@@ -101,10 +120,13 @@ class IMDBDataManager:
         
     
     def StoreNewRatings(self):
-        if(self.df_movies.shape[1]>6):
+        if(self.df_movies.shape[1]>7):
             self.df_movies['Rating_New'] = round(self.df_movies['Rating'] + self.df_movies['Rating_Oscar_Correction'] - self.df_movies['Rating_Review_Correction'],3)
             sorted_df = self.df_movies.sort_values(by=['Rating_New'], ascending=False, ignore_index=True)
-            sorted_df.to_csv('IMDBtop20_newrating.csv')
+            sorted_df.to_csv('IMDBtop'+str(self.df_movies.shape[0])+'_newrating.csv')
+        else:
+            print('Please, call the penalizer and the calculator before saving')
+            
             
 
 
@@ -114,7 +136,7 @@ top_url = 'https://www.imdb.com/chart/top/'
 
 manager  = IMDBDataManager(num_movies)
 manager.Scraper(top_url)
-#manager.create_csv()
+manager.StoreTopMovies()
 manager.ReviewPenalizer()
 manager.OscarCalculator()
 manager.StoreNewRatings()
