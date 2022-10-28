@@ -1,6 +1,7 @@
 import unittest
+import sys
+from TheBigIMDBquest.imdbmanager import IMDBDataManager 
 
-from main import IMDBDataManager 
 
 # This is the class we want to test. So, we need to import it
 class TestIMDBDataManager(unittest.TestCase):
@@ -100,7 +101,13 @@ class TestIMDBDataManager(unittest.TestCase):
         manager.StoreNewRatings()
         self.assertGreaterEqual(manager.df_movies.loc[0, 'Rating_New'],manager.df_movies.loc[self.num_movies-1, 'Rating_New'])
         
-            
+if __name__ == '__main__': 
+    sys.path.append('../TheBigIMDBquest')
+
+    loader = unittest.TestLoader()
+    testSuite = loader.discover('test')
+    testRunner = unittest.TextTestRunner(verbosity=2)
+    testRunner.run(testSuite)           
     
         
     
