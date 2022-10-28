@@ -56,7 +56,7 @@ To accomplish the task, I created two classes: Movie and IMDBDataManager. <br />
 
 #### The outcome of Scraper() and StoreTopMovies() is IMDBtopN_initial.csv file <br />
 <img src="/assets/df.png" width="400"> <br />
-#### The outcome of Scraper() and StoreTopMovies() is IMDBtopN_newrating.csv file <br />
+#### The outcome of ReviewPenalizer(), OscarCalculator() and StoreNewRatings() is IMDBtopN_newrating.csv file <br />
 <img src="/assets/new_df.png" width="900">
 
 ### Thank you for your attention! 🙌
